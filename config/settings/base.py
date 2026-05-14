@@ -5,9 +5,9 @@ import os
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-ROOT_DIR = BASE_DIR.parent
 
-load_dotenv(ROOT_DIR / ".env")
+# override=True: .env values win over pre-set shell/systemd env (dotenv default skips existing keys).
+load_dotenv(BASE_DIR / ".env", override=True)
 
 
 def env_list(name, default=""):
@@ -71,6 +71,16 @@ TEMPLATES = [
     },
 ]
 
+_POSTGRES_SSLMODE = os.getenv("POSTGRES_SSLMODE", "verify-full")
+_POSTGRES_SSLROOTCERT = os.getenv(
+    "POSTGRES_SSLROOTCERT",
+    str(BASE_DIR / "global-bundle.pem"),
+)
+
+_db_options = {"sslmode": _POSTGRES_SSLMODE}
+if _POSTGRES_SSLMODE != "disable":
+    _db_options["sslrootcert"] = _POSTGRES_SSLROOTCERT
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -79,6 +89,7 @@ DATABASES = {
         "PASSWORD": os.getenv("POSTGRES_PASSWORD", "project_password"),
         "HOST": os.getenv("POSTGRES_HOST", "localhost"),
         "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "OPTIONS": _db_options,
     }
 }
 
